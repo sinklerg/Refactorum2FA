@@ -8,9 +8,9 @@ Refactorum2FA — Velocity-плагин для двух-факторной ав�
 Игрок -> Velocity -> hub (/login или /register) -> Telegram 2FA -> towny
 ```
 
-Основной плагин ставится на **Velocity**. Чтобы блокировать движение, команды, NPC и GUI в `hub` во время ожидания Telegram 2FA, этот же jar дополнительно ставится в `hub/plugins/` как Paper/Purpur helper. На `towny` jar ставить не нужно.
+Основной плагин ставится на **Velocity**. Чтобы блокировать движение, команды, NPC и GUI в `hub` во время ожидания Telegram 2FA, этот же jar дополнительно ставится в `hub/plugins/` как Paper/Purpur helper. На `server` jar ставить не нужно.
 
-Автор: **Refactorum**
+Автор: **sinkler**
 
 ---
 
@@ -20,11 +20,11 @@ Refactorum2FA — Velocity-плагин для двух-факторной ав�
 - Freeze-сообщение с Velocity на hub теперь дублируется несколько раз, пока 2FA-запрос активен. Это закрывает тайминги, когда первое plugin-message сообщение могло прийти до полной готовности backend-helper.
 - Интеграция с ajQueue стала устойчивее к изоляции classloader Velocity: плагин ищет API через classloader самого ajQueue/ajQueuePlus, а не только через текущий classloader.
 - Очистка очереди ajQueue теперь использует официальный `QueueManager#clear(AdaptedPlayer)`, а не ручной обход очередей.
-- Добавлена блокировка `/move` и slash-команды защищённого сервера, например `/towny`, если ajQueue включает slash server aliases.
-- Добавлена защита от блокировки очереди ajQueue: linked-игрок без подтверждённой 2FA-сессии больше не может занять очередь через `/queue`, `/joinqueue`, `/joinq`, `/move`, `/server`, `/ajqueue`, `/ajq`, а также slash-команду protected-сервера вроде `/towny`.
+- Добавлена блокировка `/move` и slash-команды защищённого сервера, например `/server`, если ajQueue включает slash server aliases.
+- Добавлена защита от блокировки очереди ajQueue: linked-игрок без подтверждённой 2FA-сессии больше не может занять очередь через `/queue`, `/joinqueue`, `/joinq`, `/move`, `/server`, `/ajqueue`, `/ajq`, а также slash-команду protected-сервера вроде `/server`.
 - Добавлен runtime-hook в ajQueue `PreQueueEvent`: если очередь запускается не командой, а NPC/GUI/API, постановка в очередь тоже отменяется до подтверждения Telegram 2FA.
-- 2FA больше не стартует при попытке перейти на `towny`: теперь запрос создаётся именно после `/login` или `/l` на `hub` для уже привязанного аккаунта.
-- До подтверждения Telegram игрок остаётся замороженным в `hub`; команды блокируются и переходы на `towny` запрещаются, включая попытки от ajQueue.
+- 2FA больше не стартует при попытке перейти на `server`: теперь запрос создаётся именно после `/login` или `/l` на `hub` для уже привязанного аккаунта.
+- До подтверждения Telegram игрок остаётся замороженным в `hub`; команды блокируются и переходы на `server` запрещаются, включая попытки от ajQueue.
 - При `Запретить`, таймауте или ошибке fail-closed игрок отключается, чтобы он не мог двигаться без подтверждения.
 - Сообщение `/2fatg` в Minecraft стало удобным для копирования:
   - отдельно копируется команда `/link КОД`;
@@ -45,9 +45,9 @@ Refactorum2FA — Velocity-плагин для двух-факторной ав�
 ## Возможности
 
 - Привязка Minecraft аккаунта к Telegram через одноразовый код.
-- Предложение подключить 2FA только на `towny`, а не на `hub`.
+- Предложение подключить 2FA только на `server`, а не на `hub`.
 - Telegram 2FA запускается сразу после команды `/login` или `/l` на `hub`, если аккаунт привязан.
-- Пока Telegram 2FA не подтверждена, игрок заморожен на `hub`, все команды блокируются, а переходы на `towny` запрещаются на уровне Velocity.
+- Пока Telegram 2FA не подтверждена, игрок заморожен на `hub`, все команды блокируются, а переходы на `server` запрещаются на уровне Velocity.
 - ajQueue не сможет занять игроком очередь до подтверждения: блокируются queue-команды и дополнительно отменяется `PreQueueEvent`, если очередь создаётся через NPC/GUI/API.
 - ajQueue не сможет протолкнуть игрока на `towny` до подтверждения: любой `ServerPreConnect` на protected-server отклоняется, пока нет авторизованной 2FA-сессии.
 - Автоматический перевод после `Разрешить` отключён: подтверждение только открывает доступ в текущей прокси-сессии.
@@ -133,7 +133,7 @@ velocity/plugins/Refactorum2FA-1.2.6.jar
 hub/plugins/Refactorum2FA-1.2.6.jar
 ```
 
-На `towny` jar ставить не нужно.
+На `server` jar ставить не нужно.
 
 Один и тот же jar содержит две части:
 
@@ -165,7 +165,7 @@ try = [
 ```yaml
 network:
   auth-server: "hub"
-  target-server: "towny"
+  target-server: "server"
   protected-servers:
     - "towny"
   gate-only-from-auth-server: true
@@ -177,7 +177,7 @@ join-suggestion:
   delay-seconds: 3
   show-only-unlinked: true
   servers:
-    - "towny"
+    - "server"
 ```
 
 Логика работы:
@@ -186,14 +186,14 @@ join-suggestion:
 1. Игрок заходит на Velocity.
 2. Velocity отправляет игрока на hub.
 3. Игрок вводит /login или /l на hub.
-4. Auth-плагин пытается отправить игрока на towny.
-5. Если 2FA не подключена — игрок проходит на towny.
+4. Auth-плагин пытается отправить игрока на server.
+5. Если 2FA не подключена — игрок проходит на server.
 6. Если 2FA подключена — переход отменяется, игрок остаётся на hub.
 7. Бот отправляет запрос Разрешить / Запретить.
 8. После Разрешить доступ к towny открывается в текущей сессии, но плагин никуда не переносит игрока автоматически.
 ```
 
-Если auth-плагин не переводит игрока на `towny` автоматически, игрок может использовать на `hub`:
+Если auth-плагин не переводит игрока на `server` автоматически, игрок может использовать на `hub`:
 
 ```text
 /2fa
@@ -342,9 +342,9 @@ telegram:
 
 network:
   auth-server: "hub"
-  target-server: "towny"
+  target-server: "server"
   protected-servers:
-    - "towny"
+    - "server"
   gate-only-from-auth-server: true
   redirect-initial-protected-to-auth-server: false
   auto-connect-after-approval: false
@@ -385,7 +385,7 @@ join-suggestion:
   delay-seconds: 3
   show-only-unlinked: true
   servers:
-    - "towny"
+    - "server"
 
 storage:
   file: "data.yml"
@@ -424,9 +424,9 @@ permissions:
 
 ## Советы по настройке
 
-- Backend-порты `hub` и `towny` лучше закрыть firewall’ом от прямого входа игроков. Игроки должны заходить только через Velocity.
+- Backend-порты `hub` и `server` лучше закрыть firewall’ом от прямого входа игроков. Игроки должны заходить только через Velocity.
 - В `protected-servers` указывайте реальные имена из `velocity.toml`, а не IP и не порт.
-- На Paper/Purpur ставьте jar только на `hub`, если нужна заморозка движения/NPC/GUI во время 2FA. На `towny` helper не нужен.
+- На Paper/Purpur ставьте jar только на `hub`, если нужна заморозка движения/NPC/GUI во время 2FA. На `server` helper не нужен.
 - Если стоит ajQueue, дополнительная интеграция не нужна: плагин блокирует queue-команды и дополнительно цепляется к `PreQueueEvent`, поэтому игрок без подтверждения 2FA не займёт место в очереди.
 - После замены jar лучше полностью перезапускать Velocity, а не делать hot-reload.
 - Токен Telegram-бота не публикуйте. Если токен был показан кому-то, перевыпустите его через BotFather.
