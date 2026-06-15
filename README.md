@@ -5,7 +5,7 @@ Refactorum2FA — Velocity-плагин для двух-факторной ав�
 Плагин рассчитан на схему сети:
 
 ```text
-Игрок -> Velocity -> hub (/login или /register) -> Telegram 2FA -> towny
+Игрок -> Velocity -> hub (/login или /register) -> Telegram 2FA -> server
 ```
 
 Основной плагин ставится на **Velocity**. Чтобы блокировать движение, команды, NPC и GUI в `hub` во время ожидания Telegram 2FA, этот же jar дополнительно ставится в `hub/plugins/` как Paper/Purpur helper. На `server` jar ставить не нужно.
@@ -49,7 +49,7 @@ Refactorum2FA — Velocity-плагин для двух-факторной ав�
 - Telegram 2FA запускается сразу после команды `/login` или `/l` на `hub`, если аккаунт привязан.
 - Пока Telegram 2FA не подтверждена, игрок заморожен на `hub`, все команды блокируются, а переходы на `server` запрещаются на уровне Velocity.
 - ajQueue не сможет занять игроком очередь до подтверждения: блокируются queue-команды и дополнительно отменяется `PreQueueEvent`, если очередь создаётся через NPC/GUI/API.
-- ajQueue не сможет протолкнуть игрока на `towny` до подтверждения: любой `ServerPreConnect` на protected-server отклоняется, пока нет авторизованной 2FA-сессии.
+- ajQueue не сможет протолкнуть игрока на `server` до подтверждения: любой `ServerPreConnect` на protected-server отклоняется, пока нет авторизованной 2FA-сессии.
 - Автоматический перевод после `Разрешить` отключён: подтверждение только открывает доступ в текущей прокси-сессии.
 - Telegram-меню игрока:
   - статус аккаунта;
@@ -144,7 +144,7 @@ Paper/Purpur hub: helper, который слушает канал refactorum2fa
 
 ---
 
-## Настройка под сеть velocity / hub / towny
+## Настройка под сеть velocity / hub / server
 
 В `velocity.toml` имена серверов должны совпадать с `config.yml` плагина.
 
@@ -153,7 +153,7 @@ Paper/Purpur hub: helper, который слушает канал refactorum2fa
 ```toml
 [servers]
 hub = "127.0.0.1:25566"
-towny = "127.0.0.1:25567"
+server = "127.0.0.1:25567"
 
 try = [
   "hub"
@@ -167,7 +167,7 @@ network:
   auth-server: "hub"
   target-server: "server"
   protected-servers:
-    - "towny"
+    - "server"
   gate-only-from-auth-server: true
   redirect-initial-protected-to-auth-server: false
   auto-connect-after-approval: false
@@ -190,7 +190,7 @@ join-suggestion:
 5. Если 2FA не подключена — игрок проходит на server.
 6. Если 2FA подключена — переход отменяется, игрок остаётся на hub.
 7. Бот отправляет запрос Разрешить / Запретить.
-8. После Разрешить доступ к towny открывается в текущей сессии, но плагин никуда не переносит игрока автоматически.
+8. После Разрешить доступ к server открывается в текущей сессии, но плагин никуда не переносит игрока автоматически.
 ```
 
 Если auth-плагин не переводит игрока на `server` автоматически, игрок может использовать на `hub`:
@@ -257,7 +257,7 @@ telegram:
 
 | Команда | Где используется | Описание |
 |---|---|---|
-| `/2fatg` | Обычно на `towny` | Создаёт код привязки Telegram. |
+| `/2fatg` | Обычно на `server` | Создаёт код привязки Telegram. |
 | `/2fatg reload` | Velocity/игра | Перезагружает `config.yml` и `messages.yml`. |
 | `/2fa` | На `hub` после `/login` | Отправляет запрос подтверждения. После одобрения открывает доступ, но не переносит на `target-server`. |
 | `/2faverify` | На `hub` | Алиас `/2fa`. |
